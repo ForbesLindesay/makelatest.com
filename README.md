@@ -9,11 +9,6 @@ TODO:
 1. If pull requests are enabled, create the pull request.  If statuses passed and automerge is enabled, merge the pull request.
 1. If pull requests are disabled and status passed, update the master ref and delete the branch.  Otherwise open a pull request anyway.
 
-# Deployment
-
-1. Make worker.js run at a regular interval (up to once per hour)
-1. Make moped-scripts build work and then deploy to heroku
-
 # Profiles support
 
 1. Build a page for editing the owners profiles and saving/creating new ones
@@ -22,13 +17,27 @@ TODO:
 1. Add option to change default profile for an org
 1. Add a feature for bulk switching all repositories from one profile to another (allow selecting to include/exclude forks)
 
-# Long Term Plans
-
-## Extra bots
+# bots
 
 1. dependencies bot - automatically update dependencies to the latest version using `^`, `~` or exact versions
 1. peer dependencies bot - automatically update peer dependencies that are written as a range to keep increasing the upper bound
 1. node-version bot - update `.travis.yml`, `circle.yml` and `package.json`'s `engines` field.  Modes for latest, latest-stable or all supported.
+
+# Payments
+
+Support payment plans:
+
+1. free tier for one public repo only with only weekly updates
+1. low cost for public repos only (but including orgs you are a member of) (maybe $1/month)
+1. mid cost for personal private repos only (maybe $7/month)
+1. relatively high cost for private org repos (maybe $50/month/org)
+
+To cover costs I need to be able to support at least 10 users per heroku hobby drone (assuming 90% of users are using it for public repos only and 10MB per user in mongodb storage).
+
+# Long Term Plans
+
+## Advanced bots
+
 1. npm-release bot - automatically write a changelog in one of a few formats.  Update version using semver or breaking-semver.
 1. community-managed-project bot - auto-merge pull requests once some criteria are met (e.g. support public veto?)
 

@@ -35,23 +35,39 @@ function AuthenticatedLayout() {
   );
 }
 
-function AnonymousLayout() {
+function AnonymousLayout({isWaitingList}) {
   return (
     <View style={{height: '100%'}}>
       <h1>Make Latest</h1>
-      <Button href={getGitHubLoginUrl({returnURL: location.href, scope: ['user:email', 'public_repo', 'read:org']})}>
-        Sign Up / Sign In
-      </Button>
+      {
+        isWaitingList
+        ? (
+          <p>
+            You have been added to the waiting list.  makelatest.com is still in private beta at the moment, but
+            thank you for your interest.
+          </p>
+        )
+        : (
+          <Button
+            href={getGitHubLoginUrl({returnURL: location.href, scope: ['user:email', 'public_repo', 'read:org']})}
+          >
+            Sign Up / Sign In
+          </Button>
+        )
+      }
       <MarketingPage />
     </View>
   );
 }
 
-function Layout({isAuthenticated}) {
+function Layout({isAuthenticated, isWaitingList}) {
   return (
-    isAuthenticated
+    isAuthenticated && !isWaitingList
     ? <AuthenticatedLayout />
-    : <AnonymousLayout />
+    : <AnonymousLayout isWaitingList={isWaitingList} />
   );
 }
-export default connect(() => bql`isAuthenticated`, undefined, {renderLoading: true})(Layout);
+export default connect(() => bql`
+  isAuthenticated
+  isWaitingList
+`, undefined, {renderLoading: true})(Layout);

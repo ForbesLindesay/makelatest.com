@@ -1,7 +1,9 @@
 import mongo from 'then-mongo';
 import GitHubClient from 'github-basic';
 import throat from 'throat';
+import createCache from 'lru-cache';
 import disabledProfile from './disabled-profile';
+import enabledProfile from './enabled-profile';
 
 const DUPLICATE_KEY_ERROR_CODE = 11000;
 
@@ -9,6 +11,13 @@ if (!process.env.MONGO_CONNECTION) {
   console.error('You must add a connection string in the MONGO_CONNECTION environment variable');
   process.exit(1);
 }
+const cache = createCache({
+  // assume most objects use approximately 1KB in memory and we want to allocate up to about 20MB to the cache
+  max: 20000,
+  length(entry, key) {
+    return entry.length;
+  },
+});
 const db = mongo(
   process.env.MONGO_CONNECTION,
   [
@@ -17,8 +26,25 @@ const db = mongo(
     'users',
     'repositoryProfiles',
     'ownerProfiles',
+    'log',
   ],
 );
+function useCache(keyFunction, valueFunction) {
+  return function (...args) {
+    const key = keyFunction(...args);
+    const entry = cache.get(key);
+    if (entry) {
+      return entry.value;
+    }
+    return Promise.resolve(valueFunction(...args)).then(value => {
+      // assume individual items are 1KB and therefore arrays are length * 1KB
+      const entry = {value: Promise.resolve(value), length: Array.isArray(value) ? value.length : 1};
+      cache.set(key, entry);
+      return value;
+    });
+  };
+}
+
 db.updateAdminStatus = (user, owner) => {
   const client = new GitHubClient({version: 3, auth: user.accessToken});
 
@@ -27,7 +53,7 @@ db.updateAdminStatus = (user, owner) => {
     username: user.username,
   }).then(({state, role}) => {
     const canAdmin = state === 'active' && role === 'admin';
-    return db.owners.update(
+    return db.updateOwner(
       {
         id: owner.id,
         userID: user.id,
@@ -41,6 +67,124 @@ db.updateAdminStatus = (user, owner) => {
 db.getDefaultProfile = (ownerID) => {
   return Promise.resolve(disabledProfile);
 };
+
+// owners
+db.getOwners = useCache(
+  userID => 'owners:' + userID,
+  userID => {
+    if (typeof userID !== 'string') {
+      throw new TypeError('You must provide a valid userID');
+    }
+    return db.owners.find({userID}).then(owners => {
+      return owners.sort((a, b) => {
+        if (a.type === 'User' && b.type !== 'User') {
+          return -1;
+        }
+        if (a.type !== 'User' && b.type === 'User') {
+          return 1;
+        }
+        return a.login < b.login ? -1 : 1;
+      })
+    });
+  },
+);
+db.getOwner = useCache(
+  (id, userID) => 'owner:' + userID + ':' + id,
+  (id, userID) => {
+    if (typeof id !== 'number') {
+      throw new TypeError('You must provide a valid id');
+    }
+    if (typeof userID !== 'string') {
+      throw new TypeError('You must provide a valid userID');
+    }
+    return db.owners.findOne({id, userID});
+  },
+)
+db.updateOwner = (query, ...args) => {
+  if (typeof query.id !== 'number') {
+    throw new TypeError('You must provide a valid id');
+  }
+  if (typeof query.userID !== 'string') {
+    throw new TypeError('You must provide a valid userID');
+  }
+  return db.owners.update(query, ...args).then(() => {
+    cache.del('owners:' + query.userID);
+    cache.del('owner:' + query.userID + ':' + query.id);
+  });
+};
+
+// repositories
+db.getRepository = useCache(
+  (id, userID) => 'repository:' + userID + ':' + id,
+  (id, userID) => {
+    if (typeof id !== 'number') {
+      throw new TypeError('You must provide a valid id');
+    }
+    if (typeof userID !== 'string') {
+      throw new TypeError('You must provide a valid userID');
+    }
+    return db.repositories.findOne({id, userID});
+  },
+);
+db.getRepositories = useCache(
+  ({ownerID, userID, includeForks}) => 'repositories:' + userID + ':' + ownerID + ':' + (includeForks ? '1' : '0'),
+  ({ownerID, userID, includeForks}) => {
+    const query = {userID, ownerID};
+    if (!includeForks) {
+      query.fork = false;
+    }
+    return db.repositories.find(query).then(repositories => {
+      return repositories.sort((a, b) => {
+        return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
+      })
+    });
+  },
+)
+db.updateRepository = (query, update) => {
+  if (typeof query.id !== 'number') {
+    throw new TypeError('You must provide a valid id');
+  }
+  if (typeof query.userID !== 'string') {
+    throw new TypeError('You must provide a valid userID');
+  }
+  if (typeof update.ownerID !== 'number') {
+    throw new TypeError('You must provide a valid ownerID');
+  }
+  db.repositories.update(query, {$set: update}, {upsert: true}).then(() => {
+    cache.del('repositories:' + query.userID + ':' + update.ownerID + ':1');
+    cache.del('repositories:' + query.userID + ':' + update.ownerID + ':0');
+    cache.del('repository:' + query.userID + ':' + query.id);
+  });
+};
+
+// repository profile
+db.getRepositoryProfile = useCache(
+  (repositoryID) => 'repository-profile:' + repositoryID,
+  (repositoryID) => {
+    // note that these aren **not** keyed with a userID becuase any member of the org can see the same profiles
+    return db.repositoryProfiles.findOne({_id: repositoryID}).then(profile => {
+      if (profile.isCustom) {
+        return profile;
+      } else if (profile.profile === 'ENABLED') {
+        return enabledProfile;
+      } else if (profile.profile === 'DISABLED') {
+        return disabledProfile;
+      } else {
+        return db.ownerProfiles.findOne({_id: profile.profile});
+      }
+    });
+  }
+);
+db.updateRepositoryProfile = (repositoryID, details) => {
+  return db.repositoryProfiles.update(
+    {_id: repositoryID},
+    {$set: details},
+    {upsert: true},
+  ).then(() => {
+    cache.del('repository-profile:' + repositoryID);
+  });
+};
+
 export default db;
 
 export function updateRepos(user) {
@@ -73,7 +217,7 @@ export function updateRepos(user) {
                 avatarUrl: repo.owner.avatar_url,
                 type: repo.owner.type,
               };
-              return db.owners.update({id: owner.id, userID: user.id}, {$set: owner}, {upsert: true});
+              return db.updateOwner({id: owner.id, userID: user.id}, {$set: owner}, {upsert: true});
             }
           })).then(() => {
             return Promise.all(repos.map(throat(10, repo => {
@@ -106,7 +250,7 @@ export function updateRepos(user) {
                     }
                   }
                 ).then(
-                  () => db.repositories.update({id: repo.id, userID: user.id}, {$set: repoToSave}, {upsert: true}),
+                  () => db.updateRepository({id: repo.id, userID: user.id}, repoToSave),
                 );
               });
             })));

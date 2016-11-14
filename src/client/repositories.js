@@ -14,10 +14,6 @@ class Repositories extends Component {
     return <div>{cellData ? 'yes' : 'no'}</div>;
   }
   _renderProfileColumn = ({cellData, rowData}) => {
-    if (cellData.isCustom) {
-      // eslint-disable-next-line
-      debugger;
-    }
     const p = (
       cellData.isCustom
       ? [{id: cellData.id, name: 'Custom'}].concat(this.props.owner.profiles)

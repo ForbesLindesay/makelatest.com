@@ -9,7 +9,6 @@ import disabledProfile from '../disabled-profile';
 import enabledProfile from '../enabled-profile';
 
 const workingDirectory = tmpdir() + '/make-latest-working-directory';
-console.dir(workingDirectory);
 rimraf.sync(workingDirectory);
 mkdir.sync(workingDirectory);
 let nextIndex = 0;
@@ -26,12 +25,12 @@ function getProfileById(id) {
   }
 }
 const makeLatesetClient = new GitHubClient({version: 3, auth: process.env.BOT_TOKEN});
+
 async function runBots(repositoryProfile) {
   if (repositoryProfile.isCustom === false && repositoryProfile.profile === 'DISABLED') {
     return;
   }
-  const repository = await db.repositories.findOne({id: repositoryProfile._id, userID: repositoryProfile.userID});
-  console.log(repository.fullName);
+  const repository = await db.getRepository(repositoryProfile._id, repositoryProfile.userID);
   const user = await db.users.findOne({_id: repositoryProfile.userID});
   const settings = (
     repositoryProfile.isCustom
@@ -40,19 +39,42 @@ async function runBots(repositoryProfile) {
   );
   const userClient = new GitHubClient({version: 3, auth: user.accessToken});
   const wd = workingDirectory + '/' + repository.name + '-' + (nextIndex++);
+  console.log(repository.fullName);
+  console.log(wd);
   if (nextIndex > 100000000) {
     // don't let nextIndex get anywhere near max int since we cleanup afterwards anyway
     nextIndex = 0;
   }
-  try {
+  const options = {userClient, makeLatesetClient, workingDirectory: wd};
+  async function runBot(botID, fn) {
     await rimrafAsync(wd);
     await mkdirAsync(wd);
-    const options = {userClient, makeLatesetClient, workingDirectory: wd};
-    // TODO: handle failure of any one bot
-    await yarnBot(repository, user, settings.yarn, options);
-    // cleanup between each bot:
-    // await rimrafAsync(wd);
-    // await mkdirAsync(wd);
+    try {
+      await yarnBot(repository, user, settings[botID], options);
+      const log = {
+        type: 'log',
+        userID: repositoryProfile.userID,
+        repositoryID: repositoryProfile._id,
+        botID,
+        message: 'Bot run completed',
+        timestamp: new Date(),
+      };
+      await db.log.insert(log);
+    } catch (ex) {
+      const message = (ex.stack || ex.message || ex) + '';
+      const log = {
+        type: 'error',
+        userID: repositoryProfile.userID,
+        repositoryID: repositoryProfile._id,
+        botID,
+        message,
+        timestamp: new Date(),
+      };
+      await db.log.insert(log);
+    }
+  }
+  try {
+    await runBot('yarn', yarnBot);
   } finally {
     await rimrafAsync(wd);
   }

@@ -1,3 +1,4 @@
+import ms from 'ms';
 import runBots from './bots/run-bots';
 import db from './db';
 
@@ -9,8 +10,10 @@ async function runAll() {
     await runBots(profile);
   }
 }
-setTimeout(() => {
-  runAll().done(profiles => {
-    console.log('all bots ran');
+function poll() {
+  runAll().done(() => {
+    setTimeout(poll, ms('2 hours'));
   });
-}, 2000);
+}
+// allow time for startup before running bots
+setTimeout(poll, ms('5 seconds'));

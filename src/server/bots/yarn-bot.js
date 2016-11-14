@@ -77,7 +77,17 @@ ignore-scripts true`);
     optionalDependencies: pkg.optionalDependencies,
   };
   await writeFile(workingDirectory + '/package.json', JSON.stringify(safePkg, null, '  '));
-  await execute('node', [require.resolve('.bin/yarn')], {cwd: workingDirectory});
+  try {
+    await execute('node', [require.resolve('.bin/yarn')], {cwd: workingDirectory});
+  } catch (ex) {
+    let log;
+    try {
+      log = await readFile(workingDirectory + '/yarn-error.log', 'utf8');
+    } catch (ex2) {
+      throw ex;
+    }
+    throw 'Error running yarn ' + ex.message + '\n\n' + log;
+  }
   const newYarnSource = await readFile(workingDirectory + '/yarn.lock', 'utf8');
   if (oldYarnSource === newYarnSource) {
     return;

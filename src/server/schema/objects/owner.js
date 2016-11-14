@@ -49,11 +49,7 @@ export default {
         if (!user) {
           throw new Error('Access Denied');
         }
-        const query = {userID: user.id, ownerID: owner.id};
-        if (!includeForks) {
-          query.fork = false;
-        }
-        return db.repositories.find(query);
+        return db.getRepositories({userID: user.id, ownerID: owner.id, includeForks});
       },
     },
   },

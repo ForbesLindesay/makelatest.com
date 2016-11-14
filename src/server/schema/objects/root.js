@@ -16,23 +16,19 @@ export default {
         return !!user;
       },
     },
+    isWaitingList: {
+      type: 'boolean',
+      resolve(root, args, {user}) {
+        return !!(user && user.waitingList);
+      },
+    },
     repositoryOwners: {
       type: 'Owner[]',
       resolve(root, args, {user, db}) {
         if (!user) {
           throw new Error('Access Denied');
         }
-        return db.owners.find({userID: user.id}).then(owners => {
-          return owners.sort((a, b) => {
-            if (a.type === 'User' && b.type !== 'User') {
-              return -1;
-            }
-            if (a.type !== 'User' && b.type === 'User') {
-              return 1;
-            }
-            return a.login < b.login ? -1 : 1;
-          })
-        })
+        return db.getOwners(user.id);
       },
     },
     owner: {
@@ -44,7 +40,7 @@ export default {
         if (!user) {
           throw new Error('Access Denied');
         }
-        return db.owners.findOne({id: id === 'me' ? +user.id : +id, userID: user.id});
+        return db.getOwner(id === 'me' ? +user.id : +id, user.id);
       },
     },
     repository: {
@@ -56,7 +52,7 @@ export default {
         if (!user) {
           throw new Error('Access Denied');
         }
-        return db.repositories.findOne({userID: user.id, id});
+        return db.getRepository(id, user.id);
       },
     },
   },
