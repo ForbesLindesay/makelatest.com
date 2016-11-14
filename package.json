@@ -1,0 +1,33 @@
+{
+  "name": "makelatest.com",
+  "version": "1.0.0",
+  "private": true,
+  "description": "An easy way to keep GitHub repositories and npm packages up to date",
+  "main": "server.js",
+  "author": "ForbesLindesay",
+  "dependencies": {
+    "cross-spawn": "^5.0.1",
+    "deep-equal": "^1.0.1",
+    "github-basic": "^6.0.0",
+    "mkdirp": "^0.5.1",
+    "moped-auth-github": "^0.0.5",
+    "moped-bicycle": "^0.0.7",
+    "moped-runtime": "^0.0.15",
+    "ms": "^0.7.2",
+    "react-addons-shallow-compare": "^15.3.2",
+    "react-virtualized": "^8.4.1",
+    "rimraf": "^2.5.4",
+    "then-fs": "^2.0.0",
+    "then-mongo": "^2.3.2",
+    "then-request": "^2.2.0",
+    "throat": "^3.0.0",
+    "yarn": "^0.16.1"
+  },
+  "devDependencies": {
+    "moped-scripts": "^0.0.18"
+  },
+  "scripts": {
+    "build": "moped-scripts build",
+    "start": "node server"
+  }
+}

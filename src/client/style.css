@@ -1,0 +1,23 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html {
+  height: 100%;
+}
+body {
+  height: 100%;
+}
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.ReactVirtualized__List {
+  outline: none;
+}
+.ReactVirtualized__Table {
+  outline: none;
+}
+.ReactVirtualized__Table__Grid {
+  outline: none;
+}
