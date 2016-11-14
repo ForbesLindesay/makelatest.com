@@ -3,6 +3,7 @@ import Button from './shared/button';
 import View from './shared/view';
 import MarketingPage from './marketing-page';
 import Owners from './owners';
+import Admin from './admin';
 
 class RedirectToMe extends Component {
   static contextTypes = {
@@ -15,20 +16,26 @@ class RedirectToMe extends Component {
     return <div />;
   }
 }
-function AuthenticatedLayout() {
+function AuthenticatedLayout({isAdmin}) {
   return (
     <View style={{height: '100%'}}>
       <View flexDirection="row" justifyContent="space-between" style={{height: 100}}>
         <View justifyContent="space-around">
           <h1>Make Latest</h1>
         </View>
-        <View justifyContent="space-around">
-          <Button onClick={logout}>Log Out</Button>
+        <View flexDirection="row">
+          <View justifyContent="space-around">
+            <Button to="/admin">Admin</Button>
+          </View>
+          <View justifyContent="space-around">
+            <Button onClick={logout}>Log Out</Button>
+          </View>
         </View>
       </View>
       <View flexGrow={1}>
         <Match exactly pattern="/" component={RedirectToMe} />
-        <Owners />
+        <Match pattern="/owners" component={Owners} />
+        <Match pattern="/admin" component={Admin} />
       </View>
 
     </View>
@@ -60,14 +67,15 @@ function AnonymousLayout({isWaitingList}) {
   );
 }
 
-function Layout({isAuthenticated, isWaitingList}) {
+function Layout({isAuthenticated, isWaitingList, isAdmin}) {
   return (
-    isAuthenticated && !isWaitingList
-    ? <AuthenticatedLayout />
+    isAuthenticated && (!isWaitingList || isAdmin)
+    ? <AuthenticatedLayout isAdmin={isAdmin} />
     : <AnonymousLayout isWaitingList={isWaitingList} />
   );
 }
 export default connect(() => bql`
   isAuthenticated
   isWaitingList
+  isAdmin
 `, undefined, {renderLoading: true})(Layout);

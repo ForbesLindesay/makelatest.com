@@ -16,6 +16,9 @@ export default {
     setProfile: {
       args: {repositoryID: 'number', profileID: 'string'},
       resolve({repositoryID, profileID}, {user, db}) {
+        if (!user || user.waitingList) {
+          throw new Error('Access Denied');
+        }
         const builtInProfile = profileID === 'ENABLED' || profileID === 'DISABLED';
         if (!builtInProfile) {
           profileID = new db.ObjectId(profileID);
@@ -37,6 +40,9 @@ export default {
     setCustomProfile: {
       args: {repositoryID: 'number', settings: 'BotSettings'},
       resolve({repositoryID, settings}, {user, db}) {
+        if (!user || user.waitingList) {
+          throw new Error('Access Denied');
+        }
         return db.getRepository(repositoryID, user.id).then(repo => {
           if (!repo) {
             throw new Error('Access Denied');

@@ -26,6 +26,13 @@ function getProfileById(id) {
 }
 const makeLatesetClient = new GitHubClient({version: 3, auth: process.env.BOT_TOKEN});
 
+function log(obj) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.dir(obj);
+    return;
+  }
+  return db.log.insert(obj);
+}
 async function runBots(repositoryProfile) {
   if (repositoryProfile.isCustom === false && repositoryProfile.profile === 'DISABLED') {
     return;
@@ -51,26 +58,24 @@ async function runBots(repositoryProfile) {
     await mkdirAsync(wd);
     try {
       await yarnBot(repository, user, settings[botID], options);
-      const log = {
+      await log({
         type: 'log',
         userID: repositoryProfile.userID,
         repositoryID: repositoryProfile._id,
         botID,
         message: 'Bot run completed',
         timestamp: new Date(),
-      };
-      await db.log.insert(log);
+      });
     } catch (ex) {
       const message = (ex.stack || ex.message || ex) + '';
-      const log = {
+      await log({
         type: 'error',
         userID: repositoryProfile.userID,
         repositoryID: repositoryProfile._id,
         botID,
         message,
         timestamp: new Date(),
-      };
-      await db.log.insert(log);
+      });
     }
   }
   try {

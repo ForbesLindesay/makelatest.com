@@ -25,6 +25,10 @@ const app = createServer({
         ) {
           updateRepos(user).done();
         }
+        return db.users.update(
+          {_id: user._id},
+          {$set: {lastSeen: new Date()}},
+        ).then(() => user);
       }
       return user;
     })
@@ -44,6 +48,7 @@ app.use(githubAuth((accessToken, refreshToken, profile) => {
       profileUrl: profile.profileUrl,
       avatarUrl: profile._json.avatar_url,
       company: profile._json.company,
+      lastLogIn: new Date(),
     };
     emails.forEach(({email, primary}) => {
       if (primary) {
