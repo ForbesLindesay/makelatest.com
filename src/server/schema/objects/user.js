@@ -19,13 +19,13 @@ export default {
     lastLogIn: {
       type: 'string',
       resolve(user) {
-        return user.signUpDate.toISOString();
+        return user.lastLogIn.toISOString();
       },
     },
     lastSeen: {
       type: 'string',
       resolve(user) {
-        return user.signUpDate.toISOString();
+        return user.lastSeen.toISOString();
       },
     },
   },
