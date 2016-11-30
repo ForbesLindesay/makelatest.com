@@ -1,5 +1,6 @@
 import {readFile, writeFile} from 'then-fs';
 import spawn from 'cross-spawn';
+import {createCommit, pushCommit, createBranch, readGitFile, exactlyOneAhead} from './helpers';
 
 function execute(...args) {
   const child = spawn(...args);
@@ -20,32 +21,7 @@ function execute(...args) {
 }
 
 const YARN_LOCK_FILE_NAME = 'yarn.lock';
-// be a bit conservative
-const ONE_MEGABYTE = 1000 * 1000;
 
-async function readGitFile(client, owner, repo, fileName) {
-  try {
-    const fileObject = await client.get('/repos/:owner/:repo/contents/:path', {
-      owner,
-      repo,
-      path: fileName,
-    });
-    if (
-      fileObject.type !== 'file' ||
-      fileObject.size >= ONE_MEGABYTE ||
-      typeof fileObject.content !== 'string' ||
-      typeof fileObject.encoding !== 'string'
-    ) {
-      throw new Error('Failed to fetch yarn.lock');
-    }
-    return new Buffer(fileObject.content, fileObject.encoding).toString();
-  } catch (ex) {
-    if (ex.statusCode !== 404) {
-      throw new Error('Failed to fetch ' + fileName + ': ' + ex.message);
-    }
-    return null;
-  }
-}
 export default async function run(repository, user, settings, {userClient, makeLatesetClient, workingDirectory}) {
   const {fullName, defaultBranch} = repository;
   const {accessToken, username} = user;
@@ -56,8 +32,8 @@ export default async function run(repository, user, settings, {userClient, makeL
   }
 
   const [owner, repo] = fullName.split('/');
-  const pkgJson = await readGitFile(userClient, owner, repo, 'package.json');
-  const oldYarnSource = await readGitFile(userClient, owner, repo, 'yarn.lock');
+  const pkgJson = await readGitFile(userClient, {owner, repo, branch: defaultBranch, path: 'package.json'});
+  const oldYarnSource = await readGitFile(userClient, {owner, repo, branch: defaultBranch, path: 'yarn.lock'});
   if (!pkgJson) {
     return;
   }
@@ -92,5 +68,57 @@ ignore-scripts true`);
   if (oldYarnSource === newYarnSource) {
     return;
   }
-  console.log(newYarnSource);
+  const pendingYarnSource = await readGitFile(userClient, {owner, repo, branch: 'yarn', path: 'yarn.lock'});
+  if (pendingYarnSource && pendingYarnSource === newYarnSource) {
+    return;
+  }
+  // TODO: update existing branch if only one commit is there
+  const commitOptions = {
+    owner,
+    repo,
+    updates: [{path: 'yarn.lock', content: newYarnSource}],
+    message: '[chore] Update yarn.lock',
+  };
+
+  if (pendingYarnSource) {
+    if (exactlyOneAhead(userClient, {owner, repo, branch: 'yarn', baseBranch: defaultBranch})) {
+      const commitSha = await createCommit(
+        userClient,
+        {
+          ...commitOptions,
+          branch: defaultBranch,
+        },
+      );
+      await pushCommit(userClient, {owner, repo, branch: 'yarn', shaNewCommit: commitSha, force: true});
+      console.log('replaced branch');
+    } else {
+      const commitSha = await createCommit(
+        userClient,
+        {
+          ...commitOptions,
+          branch: 'yarn',
+        },
+      );
+      await pushCommit(userClient, {owner, repo, branch: 'yarn', shaNewCommit: commitSha});
+      console.log('appended to branch');
+    }
+  } else {
+    const commitSha = await createCommit(
+      userClient,
+      {
+        ...commitOptions,
+        branch: defaultBranch,
+      },
+    );
+    await createBranch(userClient, {owner, repo, branch: 'yarn', commitSha});
+    console.log('created new branch');
+  }
+  // TODO: add detailed description for any pull request
+  await createMergeRequest(
+    repository,
+    user,
+    settings,
+    {userClient, makeLatesetClient},
+    {sourceBranch: 'yarn', destinationBranch: defaultBranch},
+  );
 }
