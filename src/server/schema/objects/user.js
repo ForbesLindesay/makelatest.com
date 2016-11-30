@@ -6,7 +6,7 @@ export default {
     username: 'string',
     profileUrl: 'string',
     avatarUrl: 'string',
-    company: 'string',
+    company: 'string?',
     email: 'string',
     waitingList: 'boolean',
     isAdmin: 'boolean',

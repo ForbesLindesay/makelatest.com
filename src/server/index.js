@@ -57,7 +57,7 @@ app.use(githubAuth((accessToken, refreshToken, profile) => {
     })
     return db.users.update(
       {_id: profile.id},
-      {$set: user, $setOnInsert: {waitingList: true, signUpDate: new Date()}},
+      {$set: user, $setOnInsert: {isAdmin: false, waitingList: true, signUpDate: new Date()}},
       {upsert: true},
     ).then(() => user);
   });
