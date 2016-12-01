@@ -22,7 +22,7 @@ function execute(...args) {
 
 const YARN_LOCK_FILE_NAME = 'yarn.lock';
 
-export default async function run(repository, user, settings, {userClient, makeLatesetClient, workingDirectory}) {
+export default async function run(repository, user, settings, {userClient, makeLatestClient, workingDirectory}) {
   const {fullName, defaultBranch} = repository;
   const {accessToken, username} = user;
   const {enabled, onlyIfYarnLockPresent, createPullRequests, autoMerge} = settings;
@@ -118,7 +118,15 @@ ignore-scripts true`);
     repository,
     user,
     settings,
-    {userClient, makeLatesetClient},
-    {sourceBranch: 'yarn', destinationBranch: defaultBranch},
+    {userClient, makeLatestClient},
+    {
+      sourceBranch: 'yarn',
+      destinationBranch: defaultBranch,
+      title: 'Update yarn.lock',
+      body: (
+        'This automated pull request updates yarn.lock to all the latest versions. If you do not want to continue ' +
+        'getting these pull requests, you can update your settings at https://makelatest.com'
+      ),
+    },
   );
 }

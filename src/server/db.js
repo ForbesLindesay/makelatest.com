@@ -27,6 +27,7 @@ const db = mongo(
     'repositoryProfiles',
     'ownerProfiles',
     'log',
+    'autoMerge',
   ],
 );
 function useCache(keyFunction, valueFunction) {

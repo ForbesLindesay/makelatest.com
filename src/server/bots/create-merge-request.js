@@ -1,14 +1,73 @@
-export default function createMergeRequest(repository, user, settings, {userClient, makeLatesetClient}, {sourceBranch, destinationBranch})  {
-  const {createPullRequests, autoMerge} = settings;
-  // If `createPullRequests`:
-  // 1. check for existing, open pull request
-  // 2. If no existing request, create one
-  // 3. If `autoMerge`, add a "merge-when-passing" record to the database pointing at the pull request
+import db from '../db';
 
-  // If `!createPullRequests`
-  // 1. Add a "merge-when-passing" record to the database pointing at the two branches
+function getPullRequests(userClient, owner, repo, sourceBranch, destinationBranch) {
+  return userClient.get('/repos/:owner/:repo/pulls', {
+    owner,
+    repo,
+    state: 'open',
+    head: `${owner}:${sourceBranch}`,
+    base: destinationBranch,
+  });
 }
 
+export default async function createMergeRequest(
+  repository,
+  user,
+  settings,
+  {userClient, makeLatestClient},
+  {
+    sourceBranch,
+    destinationBranch,
+    title,
+    body,
+  },
+)  {
+  const {fullName} = repository;
+  const [owner, repo] = fullName.split('/');
+
+  const {createPullRequests, autoMerge} = settings;
+
+  if (createPullRequests) {
+    const existingRequests = await getPullRequests(userClient, owner, repo, sourceBranch, destinationBranch);
+    if (!existingRequests.length) {
+      const pullRequestOptions = {
+        owner,
+        repo,
+        title,
+        body,
+        head: `${owner}:${sourceBranch}`,
+        base: destinationBranch,
+      };
+      try {
+        await makeLatestClient.post('/repos/:owner/:repo/pulls', pullRequestOptions);
+      } catch (ex) {
+        pullRequestOptions.body += (
+          '\n\nThis pull request was submitted by @MakeLatest. If you add @MakeLatest to your repo as a ' +
+          'collaborator, then that account will be used to submit pull requests in the future.'
+        );
+        await userClient.post('/repos/:owner/:repo/pulls', pullRequestOptions);
+      }
+    }
+    if (autoMerge) {
+      await addMergeWhenPassing(owner, repo, sourceBranch, destinationBranch, user);
+    }
+  } else {
+    await addMergeWhenPassing(owner, repo, sourceBranch, destinationBranch, user);
+  }
+}
+function addMergeWhenPassing(owner, repo, sourceBranch, destinationBranch, user) {
+  const query = {
+    _id: `${owner}/${repo}/${sourceBranch}/${destinationBranch}`,
+  };
+  const update = {
+    owner,
+    repo,
+    sourceBranch,
+    destinationBranch,
+    userID: user.id,
+  };
+  return db.autoMerge.update(query, {$set: update}, {upsert: true})
+}
 // process merge-when-passing records on a regular basis:
 
 // If not completed:

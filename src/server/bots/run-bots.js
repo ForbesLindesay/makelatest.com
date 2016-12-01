@@ -24,7 +24,7 @@ function getProfileById(id) {
     return db.ownerProfiles.findOne({_id: id});
   }
 }
-const makeLatesetClient = new GitHubClient({version: 3, auth: process.env.BOT_TOKEN});
+const makeLatestClient = new GitHubClient({version: 3, auth: process.env.BOT_TOKEN});
 
 function log(obj) {
   if (process.env.NODE_ENV !== 'production') {
@@ -52,7 +52,7 @@ async function runBots(repositoryProfile) {
     // don't let nextIndex get anywhere near max int since we cleanup afterwards anyway
     nextIndex = 0;
   }
-  const options = {userClient, makeLatesetClient, workingDirectory: wd};
+  const options = {userClient, makeLatestClient, workingDirectory: wd};
   async function runBot(botID, fn) {
     await rimrafAsync(wd);
     await mkdirAsync(wd);

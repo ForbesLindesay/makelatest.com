@@ -2,12 +2,7 @@ TODO:
 
 # Yarn Bot
 
-1. Create "yarn" branch if it doesn't already exist
-1. If yarn branch has only got commits by yarn-bot, discard all existing commits
-1. Commit the updated yarn.lock using user's access token but make-latest as the committer (see https://developer.github.com/v3/git/commits/#create-a-commit)
-1. Wait for status to return (what if we're killed here?)
-1. If pull requests are enabled, create the pull request.  If statuses passed and automerge is enabled, merge the pull request.
-1. If pull requests are disabled and status passed, update the master ref and delete the branch.  Otherwise open a pull request anyway.
+1. Auto-merge if CI passes
 
 # Profiles support
 
