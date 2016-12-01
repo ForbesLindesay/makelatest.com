@@ -66,7 +66,7 @@ class LogViewer extends Component {
                 width={50}
               />
               <Column
-                cellRenderer={this._renderColumn}
+                cellRenderer={this._renderMessageColumn}
                 dataKey="message"
                 label="Message"
                 width={300}
