@@ -1,6 +1,7 @@
 import {readFile, writeFile} from 'then-fs';
 import spawn from 'cross-spawn';
 import {createCommit, pushCommit, createBranch, readGitFile, exactlyOneAhead} from './helpers';
+import createMergeRequest from './create-merge-request';
 
 function execute(...args) {
   const child = spawn(...args);
