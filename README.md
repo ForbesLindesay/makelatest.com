@@ -3,6 +3,7 @@ TODO:
 # Yarn Bot
 
 1. Auto-merge if CI passes
+1. Handle yarn offline mirror updating
 
 # Profiles support
 

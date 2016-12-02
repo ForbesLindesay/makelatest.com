@@ -1,14 +1,5 @@
+import getPullRequests from './get-pull-requests';
 import db from '../db';
-
-function getPullRequests(userClient, owner, repo, sourceBranch, destinationBranch) {
-  return userClient.get('/repos/:owner/:repo/pulls', {
-    owner,
-    repo,
-    state: 'open',
-    head: `${owner}:${sourceBranch}`,
-    base: destinationBranch,
-  });
-}
 
 export default async function createMergeRequest(
   repository,
@@ -38,6 +29,9 @@ export default async function createMergeRequest(
         head: `${owner}:${sourceBranch}`,
         base: destinationBranch,
       };
+      if (autoMerge) {
+        pullRequestOptions.body += '\n\n' + 'This pull request will be automatically merged if the tests pass';
+      }
       try {
         await makeLatestClient.post('/repos/:owner/:repo/pulls', pullRequestOptions);
       } catch (ex) {

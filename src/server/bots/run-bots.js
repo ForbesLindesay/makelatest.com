@@ -3,6 +3,7 @@ import mkdir from 'mkdirp';
 import rimraf from 'rimraf';
 import GitHubClient from 'github-basic';
 import Promise from 'promise';
+import makeLatestClient from './github-client';
 import yarnBot from './yarn-bot';
 import db from '../db';
 import disabledProfile from '../disabled-profile';
@@ -24,7 +25,6 @@ function getProfileById(id) {
     return db.ownerProfiles.findOne({_id: id});
   }
 }
-const makeLatestClient = new GitHubClient({version: 3, auth: process.env.BOT_TOKEN});
 
 function log(obj) {
   if (process.env.NODE_ENV !== 'production') {

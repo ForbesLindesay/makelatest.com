@@ -20,6 +20,12 @@ function execute(...args) {
     });
   });
 }
+function equalIsh(a, b) {
+  return (
+    a.toLowerCase().replace(/\s/g, '') ===
+    b.toLowerCase().replace(/\s/g, '')
+  )
+}
 
 const YARN_LOCK_FILE_NAME = 'yarn.lock';
 
@@ -66,11 +72,11 @@ ignore-scripts true`);
     throw 'Error running yarn ' + ex.message + '\n\n' + log;
   }
   const newYarnSource = await readFile(workingDirectory + '/yarn.lock', 'utf8');
-  if (oldYarnSource === newYarnSource) {
+  if (equalIsh(oldYarnSource, newYarnSource)) {
     return;
   }
   const pendingYarnSource = await readGitFile(userClient, {owner, repo, branch: 'yarn', path: 'yarn.lock'});
-  if (pendingYarnSource && pendingYarnSource === newYarnSource) {
+  if (pendingYarnSource && equalIsh(pendingYarnSource, newYarnSource)) {
     return;
   }
   // TODO: update existing branch if only one commit is there
@@ -123,7 +129,7 @@ ignore-scripts true`);
     {
       sourceBranch: 'yarn',
       destinationBranch: defaultBranch,
-      title: 'Update yarn.lock',
+      title: '[chore] Update yarn.lock',
       body: (
         'This automated pull request updates yarn.lock to all the latest versions. If you do not want to continue ' +
         'getting these pull requests, you can update your settings at https://makelatest.com'
