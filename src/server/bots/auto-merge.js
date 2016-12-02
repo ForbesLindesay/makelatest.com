@@ -1,4 +1,5 @@
 import GitHubClient from 'github-basic';
+import addCollaborator from './add-collaborator';
 import makeLatestClient from './github-client';
 import getPullRequests from './get-pull-requests';
 import db from '../db';
@@ -36,6 +37,7 @@ const betaMakeLatestClient = getBetaClient(makeLatestClient);
 async function autoMerge({_id, owner, repo, sourceBranch, destinationBranch, userID}) {
   const user = await db.users.findOne({_id: userID});
   const userClient = new GitHubClient({version: 3, auth: user.accessToken});
+  await addCollaborator(owner, repo, userClient);
   const existingRequests = await getPullRequests(userClient, owner, repo, sourceBranch, destinationBranch);
   if (existingRequests.length === 1) {
     const [pr] = existingRequests;
@@ -56,7 +58,7 @@ async function autoMerge({_id, owner, repo, sourceBranch, destinationBranch, use
       console.log('merging:');
       console.log(pr.title);
       console.dir(pr.html_url);
-      const mergeOptions = {
+      await betaMakeLatestClient.put('/repos/:owner/:repo/pulls/:number/merge', {
         owner,
         repo,
         number: pr.number,
@@ -64,17 +66,8 @@ async function autoMerge({_id, owner, repo, sourceBranch, destinationBranch, use
         commit_message: pr.body,
         sha: pr.head.sha,
         squash: true,
-      };
-      await betaMakeLatestClient.put('/repos/:owner/:repo/pulls/:number/merge', mergeOptions);
-      /*
-      try {
-        await betaMakeLatestClient.put('/repos/:owner/:repo/pulls/:number/merge', mergeOptions);
-      } catch (ex) {
-        const betaUserClient = getBetaClient(userClient);
-        await betaUserClient.put('/repos/:owner/:repo/pulls/:number/merge', mergeOptions);
-      }
-      */
-      await userClient.delete('/repos/:owner/:repo/git/refs/:ref', {
+      });
+      await makeLatestClient.delete('/repos/:owner/:repo/git/refs/:ref', {
         owner: pr.head.repo.owner.login,
         repo: pr.head.repo.name,
         ref: 'heads/' + pr.head.ref,

@@ -17,7 +17,7 @@ function poll() {
   });
 }
 // allow time for startup before running bots
-setTimeout(poll, ms('5 seconds'));
+setTimeout(poll, ms('10 seconds'));
 
 async function runAutoMerge() {
   console.log('running bots');
@@ -33,4 +33,4 @@ function pollAutoMerge() {
   });
 }
 // allow time for startup before running bots
-setTimeout(pollAutoMerge, ms('5 seconds'));
+setTimeout(pollAutoMerge, ms('10 seconds'));

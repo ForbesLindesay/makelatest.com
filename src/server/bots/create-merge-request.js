@@ -1,3 +1,4 @@
+import addCollaborator from './add-collaborator';
 import getPullRequests from './get-pull-requests';
 import db from '../db';
 
@@ -15,6 +16,7 @@ export default async function createMergeRequest(
 )  {
   const {fullName} = repository;
   const [owner, repo] = fullName.split('/');
+  await addCollaborator(owner, repo, userClient);
 
   const {createPullRequests, autoMerge} = settings;
 
@@ -32,15 +34,7 @@ export default async function createMergeRequest(
       if (autoMerge) {
         pullRequestOptions.body += '\n\n' + 'This pull request will be automatically merged if the tests pass';
       }
-      try {
-        await makeLatestClient.post('/repos/:owner/:repo/pulls', pullRequestOptions);
-      } catch (ex) {
-        pullRequestOptions.body += (
-          '\n\nThis pull request was submitted by @MakeLatest. If you add @MakeLatest to your repo as a ' +
-          'collaborator, then that account will be used to submit pull requests in the future.'
-        );
-        await userClient.post('/repos/:owner/:repo/pulls', pullRequestOptions);
-      }
+      await makeLatestClient.post('/repos/:owner/:repo/pulls', pullRequestOptions);
     }
     if (autoMerge) {
       await addMergeWhenPassing(owner, repo, sourceBranch, destinationBranch, user);
