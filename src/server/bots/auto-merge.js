@@ -79,6 +79,7 @@ async function autoMerge({_id, owner, repo, sourceBranch, destinationBranch, use
         repo: pr.head.repo.name,
         ref: 'heads/' + pr.head.ref,
       });
+      await db.autoMerge.remove({_id});
     } else {
       console.log('not merging:');
       console.log(pr.title);
