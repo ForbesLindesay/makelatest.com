@@ -2,6 +2,7 @@ import {readFile, writeFile} from 'then-fs';
 import spawn from 'cross-spawn';
 import {createCommit, pushCommit, createBranch, readGitFile, exactlyOneAhead} from './helpers';
 import createMergeRequest from './create-merge-request';
+import db from '../db';
 
 function execute(...args) {
   const child = spawn(...args);
@@ -79,6 +80,16 @@ ignore-scripts true`);
   if (pendingYarnSource && equalIsh(pendingYarnSource, newYarnSource)) {
     return;
   }
+  await db.log.insert({
+    type: 'error',
+    userID: user.id,
+    repositoryID: repository.id,
+    botID: 'yarn',
+    message: 'not all equal\n\n' + JSON.stringify({oldYarnSource, pendingYarnSource, newYarnSource}),
+    timestamp: new Date(),
+  });
+  console.log('not all equal:');
+  console.dir({oldYarnSource, pendingYarnSource, newYarnSource});
   // TODO: update existing branch if only one commit is there
   const commitOptions = {
     owner,

@@ -46,8 +46,6 @@ async function runBots(repositoryProfile) {
   );
   const userClient = new GitHubClient({version: 3, auth: user.accessToken});
   const wd = workingDirectory + '/' + repository.name + '-' + (nextIndex++);
-  console.log(repository.fullName);
-  console.log(wd);
   if (nextIndex > 100000000) {
     // don't let nextIndex get anywhere near max int since we cleanup afterwards anyway
     nextIndex = 0;
