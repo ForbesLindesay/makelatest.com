@@ -80,17 +80,6 @@ ignore-scripts true`);
   if (pendingYarnSource && equalIsh(pendingYarnSource, newYarnSource)) {
     return;
   }
-  await db.log.insert({
-    type: 'error',
-    userID: user.id,
-    repositoryID: repository.id,
-    botID: 'yarn',
-    message: 'not all equal\n\n' + JSON.stringify({oldYarnSource, pendingYarnSource, newYarnSource}),
-    timestamp: new Date(),
-  });
-  console.log('not all equal:');
-  console.dir({oldYarnSource, pendingYarnSource, newYarnSource});
-  // TODO: update existing branch if only one commit is there
   const commitOptions = {
     owner,
     repo,

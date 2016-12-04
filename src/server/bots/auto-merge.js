@@ -4,6 +4,9 @@ import makeLatestClient from './github-client';
 import getPullRequests from './get-pull-requests';
 import db from '../db';
 
+function delay(time) {
+  return new Promise((resolve, reject) => { setTimeout(delay, time); });
+}
 function getBetaClient(client) {
   const betaClient = new GitHubClient({version: 3});
   betaClient._authorization = client._authorization;
@@ -72,6 +75,7 @@ async function autoMerge({_id, owner, repo, sourceBranch, destinationBranch, use
         repo: pr.head.repo.name,
         ref: 'heads/' + pr.head.ref,
       });
+      await delay(60000);
       await db.autoMerge.remove({_id});
     } else {
       console.log('not merging:');
