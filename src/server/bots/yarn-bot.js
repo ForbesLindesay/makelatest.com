@@ -1,9 +1,13 @@
 import {readFile, writeFile} from 'then-fs';
 import spawn from 'cross-spawn';
+import Promise from 'promise';
 import {createCommit, pushCommit, createBranch, readGitFile, exactlyOneAhead} from './helpers';
 import createMergeRequest from './create-merge-request';
 import db from '../db';
 
+function delay(time) {
+  return new Promise((resolve, reject) => { setTimeout(delay, time); });
+}
 function execute(...args) {
   const child = spawn(...args);
   return new Promise((resolve, reject) => {
@@ -41,11 +45,11 @@ export default async function run(repository, user, settings, {userClient, makeL
 
   const [owner, repo] = fullName.split('/');
   const pkgJson = await readGitFile(userClient, {owner, repo, branch: defaultBranch, path: 'package.json'});
-  const oldYarnSource = await readGitFile(userClient, {owner, repo, branch: defaultBranch, path: 'yarn.lock'});
+  const hasYarn = !!(await readGitFile(userClient, {owner, repo, branch: defaultBranch, path: 'yarn.lock'}));
   if (!pkgJson) {
     return;
   }
-  if (!oldYarnSource && onlyIfYarnLockPresent) {
+  if (!hasYarn && onlyIfYarnLockPresent) {
     return;
   }
   // TODO: how should we generate this robustly?
@@ -73,22 +77,45 @@ ignore-scripts true`);
     throw 'Error running yarn ' + ex.message + '\n\n' + log;
   }
   const newYarnSource = await readFile(workingDirectory + '/yarn.lock', 'utf8');
-  if (equalIsh(oldYarnSource, newYarnSource)) {
-    return;
+  for (let i = 0; i < 3; i++) {
+    const oldYarnSource = await readGitFile(userClient, {owner, repo, branch: defaultBranch, path: 'yarn.lock'});
+    if (equalIsh(oldYarnSource, newYarnSource)) {
+      return;
+    }
+    await delay(5000);
   }
   const pendingYarnSource = await readGitFile(userClient, {owner, repo, branch: 'yarn', path: 'yarn.lock'});
-  if (pendingYarnSource && equalIsh(pendingYarnSource, newYarnSource)) {
-    return;
-  }
-  const commitOptions = {
-    owner,
-    repo,
-    updates: [{path: 'yarn.lock', content: newYarnSource}],
-    message: '[chore] Update yarn.lock',
-  };
+  if (!pendingYarnSource || !equalIsh(pendingYarnSource, newYarnSource)) {
+    const commitOptions = {
+      owner,
+      repo,
+      updates: [{path: 'yarn.lock', content: newYarnSource}],
+      message: '[chore] Update yarn.lock',
+    };
 
-  if (pendingYarnSource) {
-    if (exactlyOneAhead(userClient, {owner, repo, branch: 'yarn', baseBranch: defaultBranch})) {
+    if (pendingYarnSource) {
+      if (exactlyOneAhead(userClient, {owner, repo, branch: 'yarn', baseBranch: defaultBranch})) {
+        const commitSha = await createCommit(
+          userClient,
+          {
+            ...commitOptions,
+            branch: defaultBranch,
+          },
+        );
+        await pushCommit(userClient, {owner, repo, branch: 'yarn', shaNewCommit: commitSha, force: true});
+        console.log('replaced branch');
+      } else {
+        const commitSha = await createCommit(
+          userClient,
+          {
+            ...commitOptions,
+            branch: 'yarn',
+          },
+        );
+        await pushCommit(userClient, {owner, repo, branch: 'yarn', shaNewCommit: commitSha});
+        console.log('appended to branch');
+      }
+    } else {
       const commitSha = await createCommit(
         userClient,
         {
@@ -96,29 +123,9 @@ ignore-scripts true`);
           branch: defaultBranch,
         },
       );
-      await pushCommit(userClient, {owner, repo, branch: 'yarn', shaNewCommit: commitSha, force: true});
-      console.log('replaced branch');
-    } else {
-      const commitSha = await createCommit(
-        userClient,
-        {
-          ...commitOptions,
-          branch: 'yarn',
-        },
-      );
-      await pushCommit(userClient, {owner, repo, branch: 'yarn', shaNewCommit: commitSha});
-      console.log('appended to branch');
+      await createBranch(userClient, {owner, repo, branch: 'yarn', commitSha});
+      console.log('created new branch');
     }
-  } else {
-    const commitSha = await createCommit(
-      userClient,
-      {
-        ...commitOptions,
-        branch: defaultBranch,
-      },
-    );
-    await createBranch(userClient, {owner, repo, branch: 'yarn', commitSha});
-    console.log('created new branch');
   }
   // TODO: add detailed description for any pull request
   await createMergeRequest(

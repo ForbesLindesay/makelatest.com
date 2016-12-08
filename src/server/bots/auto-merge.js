@@ -70,12 +70,12 @@ async function autoMerge({_id, owner, repo, sourceBranch, destinationBranch, use
         sha: pr.head.sha,
         squash: true,
       });
+      await delay(60000);
       await makeLatestClient.delete('/repos/:owner/:repo/git/refs/:ref', {
         owner: pr.head.repo.owner.login,
         repo: pr.head.repo.name,
         ref: 'heads/' + pr.head.ref,
       });
-      await delay(60000);
       await db.autoMerge.remove({_id});
     } else {
       console.log('not merging:');
