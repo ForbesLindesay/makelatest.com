@@ -20,9 +20,9 @@ function poll() {
 setTimeout(poll, ms('10 seconds'));
 
 async function runAutoMerge() {
-  console.log('running bots');
+  console.log('running automerge');
   const autoMerges = await db.autoMerge.find();
-  console.log('got profiles');
+  console.log('got automerges');
   for (const autoMergeConfig of autoMerges) {
     await autoMerge(autoMergeConfig);
   }

@@ -77,6 +77,7 @@ async function runBots(repositoryProfile) {
     }
   }
   try {
+    console.log('running yarn');
     await runBot('yarn', yarnBot);
   } finally {
     await rimrafAsync(wd);
