@@ -25,11 +25,11 @@
     "yarn": "^0.16.1"
   },
   "devDependencies": {
-    "moped-scripts": "^0.0.22"
+    "moped-scripts": "^0.0.23"
   },
   "scripts": {
     "build": "moped-scripts build",
-    "deploy": "npm install && npm run build && npm prune --prod && npm i heroku-release && heroku-release --app makelatest",
+    "deploy": "yarn && npm run build && npm i heroku-release && heroku-release --app makelatest",
     "start": "node server"
   }
 }
