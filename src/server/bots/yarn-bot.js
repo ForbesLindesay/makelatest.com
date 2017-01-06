@@ -6,7 +6,7 @@ import createMergeRequest from './create-merge-request';
 import db from '../db';
 
 function delay(time) {
-  return new Promise((resolve, reject) => { setTimeout(delay, time); });
+  return new Promise((resolve, reject) => { setTimeout(resolve, time); });
 }
 function execute(...args) {
   const child = spawn(...args);

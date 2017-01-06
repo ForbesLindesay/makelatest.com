@@ -5,7 +5,7 @@ import getPullRequests from './get-pull-requests';
 import db from '../db';
 
 function delay(time) {
-  return new Promise((resolve, reject) => { setTimeout(delay, time); });
+  return new Promise((resolve, reject) => { setTimeout(resolve, time); });
 }
 function getBetaClient(client) {
   const betaClient = new GitHubClient({version: 3});
