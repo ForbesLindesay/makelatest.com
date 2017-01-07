@@ -16,7 +16,7 @@ class RedirectToMe extends Component {
     return <div />;
   }
 }
-function AuthenticatedLayout({isAdmin}) {
+function AuthenticatedLayout({isAdmin, updateInProgress, onRefreshRepos}) {
   return (
     <View style={{height: '100%'}}>
       <View flexDirection="row" justifyContent="space-between" style={{height: 100}}>
@@ -24,8 +24,17 @@ function AuthenticatedLayout({isAdmin}) {
           <h1>Make Latest</h1>
         </View>
         <View flexDirection="row">
+          {
+            isAdmin
+            ? (
+              <View justifyContent="space-around">
+                <Button to="/admin">Admin</Button>
+              </View>
+            )
+            : null
+          }
           <View justifyContent="space-around">
-            <Button to="/admin">Admin</Button>
+            <Button disabled={updateInProgress} onClick={onRefreshRepos}>Refresh Repos</Button>
           </View>
           <View justifyContent="space-around">
             <Button onClick={logout}>Log Out</Button>
@@ -67,15 +76,24 @@ function AnonymousLayout({isWaitingList}) {
   );
 }
 
-function Layout({isAuthenticated, isWaitingList, isAdmin}) {
+function Layout({isAuthenticated, isWaitingList, isAdmin, updateInProgress, onRefreshRepos}) {
   return (
     isAuthenticated && (!isWaitingList || isAdmin)
-    ? <AuthenticatedLayout isAdmin={isAdmin} />
+    ? <AuthenticatedLayout isAdmin={isAdmin} updateInProgress={updateInProgress} onRefreshRepos={onRefreshRepos} />
     : <AnonymousLayout isWaitingList={isWaitingList} />
   );
 }
-export default connect(() => bql`
-  isAuthenticated
-  isWaitingList
-  isAdmin
-`, undefined, {renderLoading: true})(Layout);
+export default connect(
+  () => bql`
+    isAuthenticated
+    isWaitingList
+    isAdmin
+    updateInProgress
+  `,
+  (client) => ({
+    onRefreshRepos() {
+      client.update('Root.updateRepos', {});
+    },
+  }),
+  {renderLoading: true},
+)(Layout);

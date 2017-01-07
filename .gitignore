@@ -24,3 +24,6 @@ node_modules
 
 # Config files
 .env
+
+# We install a local copy of yarn to this folder
+/yarn

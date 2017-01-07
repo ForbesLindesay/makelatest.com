@@ -1,3 +1,6 @@
+import ms from 'ms';
+import {updateRepos} from '../../db';
+
 export default {
   name: 'Root',
   fields: {
@@ -89,11 +92,38 @@ export default {
         return db.users.find().sort({signUpDate: -1});
       },
     },
+    updateInProgress: {
+      type: 'boolean',
+      resolve(root, args, {user}) {
+        if (!user) {
+          return false;
+        }
+        const now = Date.now();
+        // has started if it has a reposLastUpdateStart date within the last 1 hour
+        const hasStarted = !!(
+          user.reposLastUpdateStart &&
+          user.reposLastUpdateStart.getTime() > now - ms('1 hour')
+        );
+        // has ended if it has started and the last end is later than the last start
+        const hasEnded = !!(
+          hasStarted &&
+          user.reposLastUpdateEnd &&
+          user.reposLastUpdateEnd.getTime() > user.reposLastUpdateStart.getTime()
+        );
+        return hasStarted && !hasEnded;
+      },
+    },
   },
   mutations: {
     refresh: {
       resolve() {
         // intentionlly a no-op mutation
+      },
+    },
+    updateRepos: {
+      resolve(args, {user}) {
+        // intentionally ignore result, since we track the result via updateInProgress
+        updateRepos(user).done();
       },
     },
   },

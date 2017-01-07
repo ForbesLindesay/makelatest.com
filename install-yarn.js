@@ -5,7 +5,7 @@ const {unpack} = require('tar-pack');
 const currentYarnVersion = JSON.parse(readFileSync(__dirname + '/package.json', 'utf8')).yarnVersion;
 let installedYarnVersion = 'NOTHING';
 try {
-  installedYarnVersion = JSON.parse(readFileSync(require.resolve('yarn/package.json'), 'utf8')).version;
+  installedYarnVersion = JSON.parse(readFileSync(require.resolve('./yarn/package.json'), 'utf8')).version;
 } catch (ex) {
   // ignore ex
 }
@@ -24,7 +24,7 @@ request('get', 'https://yarnpkg.com/latest-version').getBody('utf8').then(latest
   return request('get', `https://yarnpkg.com/downloads/${version}/yarn-v${version}.tar.gz`).getBody();
 }).done(data => {
   console.log('Unpacking yarn');
-  unpack(__dirname + '/node_modules/yarn/', function (err) {
+  unpack(__dirname + '/yarn/', function (err) {
     if (err) throw err;
     else console.log('done');
   }).end(data);

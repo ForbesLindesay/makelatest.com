@@ -24,4 +24,10 @@ export default styled(Button)`
     background: palevioletred;
     color: white;
   }
+  &:disabled {
+    background: #e6e6e6;
+    color: #baabb0;
+    border-color: #baabb0;
+    cursor: auto;
+  }
 `;

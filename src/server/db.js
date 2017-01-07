@@ -113,6 +113,18 @@ db.updateOwner = (query, ...args) => {
     cache.del('owner:' + query.userID + ':' + query.id);
   });
 };
+db.removeOwner = (owner) => {
+  if (typeof owner.id !== 'number') {
+    throw new TypeError('You must provide a valid id');
+  }
+  if (typeof owner.userID !== 'string') {
+    throw new TypeError('You must provide a valid userID');
+  }
+  return db.owners.remove({id: owner.id, userID: owner.userID}).then(() => {
+    cache.del('owners:' + owner.userID);
+    cache.del('owner:' + owner.userID + ':' + owner.id);
+  });
+};
 
 // repositories
 db.getRepository = useCache(
@@ -157,6 +169,26 @@ db.updateRepository = (query, update) => {
     cache.del('repository:' + query.userID + ':' + query.id);
   });
 };
+db.removeRepository = (repo) => {
+  if (typeof repo.id !== 'number') {
+    throw new TypeError('You must provide a valid id');
+  }
+  if (typeof repo.userID !== 'string') {
+    throw new TypeError('You must provide a valid userID');
+  }
+  if (typeof repo.ownerID !== 'number') {
+    throw new TypeError('You must provide a valid ownerID');
+  }
+  db.repositories.remove({
+    id: repo.id,
+    userID: repo.userID,
+    ownerID: repo.ownerID,
+  }).then(() => {
+    cache.del('repositories:' + repo.userID + ':' + repo.ownerID + ':1');
+    cache.del('repositories:' + repo.userID + ':' + repo.ownerID + ':0');
+    cache.del('repository:' + repo.userID + ':' + repo.id);
+  });
+};
 
 // repository profile
 db.getRepositoryProfile = useCache(
@@ -188,6 +220,21 @@ db.updateRepositoryProfile = (repositoryID, details) => {
 
 export default db;
 
+function retry(getResult) {
+  return new Promise((resolve, reject) => {
+    let attemptCount = 0;
+    function attempt() {
+      Promise.resolve(getResult()).done(resolve, err => {
+        if (attemptCount > 5) {
+          reject(err);
+        } else {
+          attempt();
+        }
+      });
+    }
+    attempt();
+  });
+}
 export function updateRepos(user) {
   const ownerIDs = [];
   const repoIDs = [];
@@ -258,7 +305,7 @@ export function updateRepos(user) {
           }).then(() => {
             if (repos.getNext) {
               console.log('on page');
-              onPage(repos.getNext());
+              onPage(retry(() => repos.getNext()));
             } else {
               console.log('resolve');
               resolve();
@@ -266,10 +313,31 @@ export function updateRepos(user) {
           });
         }).done(null, reject);
       }
-      onPage(client.get('/user/repos', {affiliation: 'owner,organization_member'}));
+      onPage(retry(() => client.get('/user/repos', {affiliation: 'owner,organization_member'})));
     });
   }).then(() => {
     // TODO: remove any owners and repos not in ownerIDs and repoIDs
+    return db.repositories.find({userID: user.id});
+  }).then(repositories => {
+    Promise.all([
+      repositories.filter(repo => {
+        return !repoIDs.includes(repo.id);
+      }).map(repo => {
+        return db.removeRepository(repo);
+      })
+    ]);
+  }).then(() => {
+    return db.owners.find({userID: user.id});
+  }).then(owners => {
+    Promise.all([
+      owners.filter(owner => {
+        return !ownerIDs.includes(owner.id);
+      }).map(owner => {
+        return db.removeOwner(owner);
+      })
+    ]);
+  }).then(() => {
+    console.log('user repos updated');
     return db.users.update({_id: user.id}, {$set: {reposLastUpdateEnd: new Date()}});
   });
 }

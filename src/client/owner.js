@@ -31,7 +31,7 @@ class Owner extends Component {
     const {includeForks} = this.state;
     return (
       <View flexGrow={1}>
-        {/*<ViewProfilesButton ownerID={ownerID}/>*/}
+        {/* <ViewProfilesButton ownerID={ownerID}/> */}
         <Checkbox checked={includeForks} onChange={this._onToggleIncludeForks}>
           Include Forks
         </Checkbox>

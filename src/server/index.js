@@ -4,11 +4,7 @@ import createBicycleMiddleware from 'moped-bicycle/server';
 import GitHubClient from 'github-basic';
 import ms from 'ms';
 import db, {updateRepos} from './db';
-import './worker';
-
-import yarnBot from './bots/yarn-bot';
-
-Promise = require('promise');
+// import './worker';
 
 const app = createServer({
   serializeUser(user) {
@@ -21,7 +17,7 @@ const app = createServer({
         // auto update repositories in the background every two hours if logged in
         if (
           (!user.reposLastUpdateEnd || user.reposLastUpdateEnd.getTime() < now - ms('2 hour')) &&
-          (!user.reposLastUpdateStart || user.reposLastUpdateStart < now - ms('30 minutes'))
+          (!user.reposLastUpdateStart || user.reposLastUpdateStart.getTime() < now - ms('30 minutes'))
         ) {
           updateRepos(user).done();
         }
@@ -32,7 +28,7 @@ const app = createServer({
       }
       return user;
     })
-  }
+  },
 });
 
 app.use(githubAuth((accessToken, refreshToken, profile) => {
