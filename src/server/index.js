@@ -4,7 +4,7 @@ import createBicycleMiddleware from 'moped-bicycle/server';
 import GitHubClient from 'github-basic';
 import ms from 'ms';
 import db, {updateRepos} from './db';
-// import './worker';
+import './worker';
 
 const app = createServer({
   serializeUser(user) {
