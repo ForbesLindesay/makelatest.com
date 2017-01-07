@@ -69,7 +69,7 @@ ignore-scripts true`);
   await writeFile(workingDirectory + '/package.json', JSON.stringify(safePkg, null, '  '));
   try {
     console.log('running yarn');
-    await execute('node', [require.resolve('.bin/yarn')], {cwd: workingDirectory});
+    await execute('node', [require.resolve('yarn/bin/yarn.js')], {cwd: workingDirectory});
   } catch (ex) {
     console.log('error running yarn');
     let log;

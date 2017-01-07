@@ -29,6 +29,7 @@ function getProfileById(id) {
 function log(obj) {
   if (process.env.NODE_ENV !== 'production') {
     console.dir(obj);
+    console.error(obj.message);
     return;
   }
   return db.log.insert(obj);

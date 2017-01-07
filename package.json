@@ -18,11 +18,11 @@
     "react-addons-shallow-compare": "^15.3.2",
     "react-virtualized": "^8.4.1",
     "rimraf": "^2.5.4",
+    "tar-pack": "^3.4.0",
     "then-fs": "^2.0.0",
     "then-mongo": "^2.3.2",
     "then-request": "^2.2.0",
-    "throat": "^3.0.0",
-    "yarn": "^0.16.1"
+    "throat": "^3.0.0"
   },
   "devDependencies": {
     "moped-scripts": "^0.0.23"
@@ -30,6 +30,8 @@
   "scripts": {
     "build": "moped-scripts build",
     "deploy": "yarn && npm run build && npm i heroku-release && heroku-release --app makelatest",
-    "start": "node server"
-  }
+    "start": "node server",
+    "postinstall": "node install-yarn"
+  },
+  "yarnVersion": "0.18.1"
 }
