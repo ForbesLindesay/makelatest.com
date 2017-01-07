@@ -46,7 +46,7 @@ function Owners({repositoryOwners}) {
             <List
               height={height}
               rowCount={repositoryOwners.length}
-              rowHeight={50}
+              rowHeight={51}
               rowRenderer={rowRenderer}
               width={width}
             />
