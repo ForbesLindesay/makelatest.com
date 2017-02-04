@@ -33,5 +33,5 @@
     "start": "node server",
     "postinstall": "node install-yarn"
   },
-  "yarnVersion": "0.18.1"
+  "yarnVersion": "0.19.1"
 }

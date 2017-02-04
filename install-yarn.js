@@ -14,6 +14,7 @@ request('get', 'https://yarnpkg.com/latest-version').getBody('utf8').then(latest
   if (latestYarnVersion !== currentYarnVersion) {
     console.warn('Latest yarn version is: ' + latestYarnVersion);
     console.warn('Current yarn version is: ' + currentYarnVersion);
+    process.exit(1);
   }
   if (installedYarnVersion === currentYarnVersion) {
     process.exit(0);
