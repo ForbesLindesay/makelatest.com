@@ -3,12 +3,20 @@ import Button from './shared/button';
 import View from './shared/view';
 // N.B. react-virtualized requires react-addons-shallow-compare but does not list it as a dependency
 
+const RepoLink = styled.a`
+  color: #db7093;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 class Repositories extends Component {
   _rowGetter = ({index}) => {
     return this.props.owner.repositories[index];
   }
-  _renderNameColumn({cellData}) {
-    return <div>{cellData}</div>;
+  _renderNameColumn({cellData, rowData}) {
+    return <RepoLink href={'https://github.com/' + rowData.fullName}>{cellData}</RepoLink>;
   }
   _renderIsForkColumn({cellData}) {
     return <div>{cellData ? 'yes' : 'no'}</div>;
@@ -88,6 +96,7 @@ export default connect(
       repositories(includeForks: ${props.includeForks || false}) {
         id
         name
+        fullName
         fork
         profile {
           id
