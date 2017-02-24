@@ -16,7 +16,7 @@
     "moped-runtime": "^0.0.25",
     "ms": "^0.7.2",
     "react-addons-shallow-compare": "^15.3.2",
-    "react-virtualized": "^8.4.1",
+    "react-virtualized": "^9.0.5",
     "rimraf": "^2.5.4",
     "tar-pack": "^3.4.0",
     "then-fs": "^2.0.0",
