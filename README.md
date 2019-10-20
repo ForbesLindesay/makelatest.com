@@ -2,6 +2,8 @@ TODO:
 
 # Yarn Bot
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/ForbesLindesay/makelatest.com.svg)](https://greenkeeper.io/)
+
 1. Auto-merge if CI passes
 1. Handle yarn offline mirror updating
 
